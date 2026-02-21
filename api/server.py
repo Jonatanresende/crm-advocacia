@@ -1,7 +1,5 @@
 """
 CRM Advocacia — Backend FastAPI com PostgreSQL
-Roda localmente em http://localhost:8001
-Conecta ao mesmo banco do bot no Railway.
 """
 
 import os
@@ -13,7 +11,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -21,15 +19,14 @@ import httpx
 app = FastAPI(title="CRM Advocacia")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-BASE_DIR = Path(__file__).parent.parent  # raiz do projeto /app
-UPLOADS_DIR = BASE_DIR / "uploads"
-UPLOADS_DIR.mkdir(exist_ok=True)
+# Caminhos — sempre relativo à raiz do projeto /app
+ROOT_DIR = Path("/app")
+STATIC_DIR = ROOT_DIR / "static"
+UPLOADS_DIR = ROOT_DIR / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
-# URL pública do PostgreSQL (substitua pela sua DATABASE_PUBLIC_URL do Railway)
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "COLE_AQUI_SUA_DATABASE_PUBLIC_URL"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 
 def get_db():
@@ -110,12 +107,14 @@ def init_db():
     conn.close()
     print("Banco CRM pronto.", flush=True)
 
+
 try:
     init_db()
 except Exception as e:
-    print(f"AVISO: Nao foi possivel conectar ao banco: {e}", flush=True)
-    print("Verifique DATABASE_URL no server.py", flush=True)
+    print(f"AVISO banco: {e}", flush=True)
 
+
+# ─── HEALTH ──────────────────────────────────────────────
 
 @app.get("/health")
 def health():
@@ -128,11 +127,12 @@ class InstanciaCreate(BaseModel):
     nome: str; evolution_url: str; evolution_key: str; instance_name: str
 
 class UsuarioCreate(BaseModel):
-    nome: str; email: str; senha: str; perfil: str = "atendente"; telefone: Optional[str] = None
+    nome: str; email: str; senha: str
+    perfil: str = "atendente"; telefone: Optional[str] = None
 
 class ContatoCreate(BaseModel):
-    nome: Optional[str] = None; telefone: str; cpf: Optional[str] = None
-    email: Optional[str] = None; observacoes: Optional[str] = None
+    nome: Optional[str] = None; telefone: str
+    cpf: Optional[str] = None; email: Optional[str] = None; observacoes: Optional[str] = None
 
 class ContatoUpdate(BaseModel):
     nome: Optional[str] = None; cpf: Optional[str] = None
@@ -281,7 +281,7 @@ async def upload_documento(id: int, file: UploadFile = File(...)):
     cur.execute("INSERT INTO documentos (cliente_id,nome,tipo,caminho,tamanho) VALUES (%s,%s,%s,%s,%s)",
         (id, file.filename, file.content_type, str(destino), len(conteudo)))
     conn.commit(); cur.close(); conn.close()
-    return {"ok": True, "nome": file.filename}
+    return {"ok": True}
 
 @app.delete("/api/documentos/{id}")
 def deletar_documento(id: int):
@@ -329,7 +329,7 @@ def deletar_agendamento(id: int):
     conn.commit(); cur.close(); conn.close(); return {"ok": True}
 
 
-# ─── HISTÓRICO DE CONVERSAS ──────────────────────────────
+# ─── HISTÓRICO ───────────────────────────────────────────
 
 @app.get("/api/historico/{telefone}")
 def historico(telefone: str):
@@ -361,12 +361,8 @@ def dashboard():
 
 # ─── STATIC ──────────────────────────────────────────────
 
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/")
-def index(): return FileResponse(str(BASE_DIR / "static" / "index.html"))
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8001))
-    uvicorn.run("api.server:app", host="0.0.0.0", port=port)
+def index():
+    return FileResponse(str(STATIC_DIR / "index.html"))
