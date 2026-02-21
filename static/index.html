@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Advocacia</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #161616;
+  --surface2: #1e1e1e;
+  --surface3: #252525;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dim: rgba(201,168,76,0.15);
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --text-muted: #555;
+  --green: #4caf7d;
+  --red: #e05c5c;
+  --blue: #5c8de0;
+  --radius: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* TEMA LIGHT */
+body.light {
+  --bg: #f4f1eb;
+  --surface: #ffffff;
+  --surface2: #f0ece2;
+  --surface3: #e8e3d8;
+  --border: #ddd8cc;
+  --gold: #a67c2e;
+  --gold-light: #c9a84c;
+  --gold-dim: rgba(166,124,46,0.1);
+  --text: #1a1a1a;
+  --text-dim: #555;
+  --text-muted: #999;
+  --green: #2e7d52;
+  --red: #c0392b;
+  --blue: #2c5f9e;
+  --shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+
+/* BOTAO TEMA */
+.theme-toggle {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: var(--border); border: none; cursor: pointer;
+  position: relative; transition: background 0.3s; flex-shrink: 0;
+  outline: none;
+}
+.theme-toggle::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--gold); transition: transform 0.3s;
+}
+body.light .theme-toggle::after { transform: translateX(18px); }
+body.light .theme-toggle { background: var(--gold-dim); }
+.theme-icon { font-size: 16px; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 240px; min-height:100vh; background:var(--surface);
+  border-right:1px solid var(--border); display:flex; flex-direction:column;
+  position:fixed; left:0; top:0; bottom:0; z-index:100;
+}
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo h1 {
+  font-family:'Playfair Display',serif; font-size:18px;
+  color:var(--gold); letter-spacing:0.5px;
+}
+.sidebar-logo span { font-size:11px; color:var(--text-muted); letter-spacing:2px; text-transform:uppercase; }
+.nav { flex:1; padding:16px 0; }
+.nav-item {
+  display:flex; align-items:center; gap:12px; padding:11px 24px;
+  cursor:pointer; color:var(--text-dim); font-size:14px; font-weight:500;
+  transition:all 0.2s; border-left:3px solid transparent; position:relative;
+}
+.nav-item:hover { color:var(--text); background:var(--surface2); }
+.nav-item.active { color:var(--gold); border-left-color:var(--gold); background:var(--gold-dim); }
+.nav-item svg { width:18px; height:18px; flex-shrink:0; }
+.sidebar-footer { padding:16px 24px; border-top:1px solid var(--border); }
+.sidebar-footer span { font-size:11px; color:var(--text-muted); }
+
+/* MAIN */
+.main { margin-left:240px; flex:1; min-height:100vh; }
+.topbar {
+  height:60px; background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 32px; position:sticky; top:0; z-index:50;
+}
+.topbar-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--text); }
+.topbar-actions { display:flex; gap:10px; align-items:center; }
+
+/* CONTENT */
+.page { display:none; padding:32px; }
+.page.active { display:block; }
+
+/* CARDS DASHBOARD */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
+.stat-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:24px; position:relative; overflow:hidden;
+}
+.stat-card::before {
+  content:''; position:absolute; top:0; right:0; width:3px; height:100%; background:var(--gold);
+}
+.stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; }
+.stat-value { font-family:'Playfair Display',serif; font-size:36px; color:var(--gold); }
+.stat-sub { font-size:12px; color:var(--text-muted); margin-top:4px; }
+
+/* TABLE */
+.table-container {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); overflow:hidden;
+}
+.table-header {
+  padding:20px 24px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.table-header h3 { font-size:15px; font-weight:600; color:var(--text); }
+table { width:100%; border-collapse:collapse; }
+thead th {
+  padding:12px 20px; text-align:left; font-size:11px; font-weight:600;
+  color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;
+  background:var(--surface2); border-bottom:1px solid var(--border);
+}
+tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
+tbody tr:hover { background:var(--surface2); }
+tbody tr:last-child { border-bottom:none; }
+td { padding:14px 20px; font-size:14px; }
+
+/* BADGE */
+.badge {
+  display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:20px; font-size:11px; font-weight:600; letter-spacing:0.5px;
+}
+.badge-green { background:rgba(76,175,125,0.15); color:var(--green); }
+.badge-red { background:rgba(224,92,92,0.15); color:var(--red); }
+.badge-gold { background:var(--gold-dim); color:var(--gold); }
+.badge-blue { background:rgba(92,141,224,0.15); color:var(--blue); }
+.badge-gray { background:rgba(136,136,136,0.15); color:var(--text-dim); }
+
+/* BUTTONS */
+.btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 16px; border-radius:var(--radius); border:none;
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+  cursor:pointer; transition:all 0.2s;
+}
+.btn-gold { background:var(--gold); color:#0f0f0f; }
+.btn-gold:hover { background:var(--gold-light); }
+.btn-outline { background:transparent; color:var(--text-dim); border:1px solid var(--border); }
+.btn-outline:hover { border-color:var(--gold); color:var(--gold); }
+.btn-danger { background:rgba(224,92,92,0.15); color:var(--red); border:1px solid rgba(224,92,92,0.3); }
+.btn-danger:hover { background:rgba(224,92,92,0.25); }
+.btn-sm { padding:5px 10px; font-size:12px; }
+.btn-icon { padding:7px; border-radius:6px; }
+
+/* FORMS */
+.form-group { margin-bottom:20px; }
+.form-label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.form-input, .form-select, .form-textarea {
+  width:100%; padding:10px 14px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius); color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px;
+  outline:none; transition:border 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--gold); }
+.form-textarea { resize:vertical; min-height:80px; }
+.form-select option { background:var(--surface2); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;
+  display:none; align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  width:100%; max-width:500px; max-height:90vh; overflow-y:auto;
+  box-shadow:var(--shadow); animation:slideUp 0.2s ease;
+}
+@keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.modal-header {
+  padding:24px 28px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-header h3 { font-family:'Playfair Display',serif; font-size:18px; }
+.modal-body { padding:24px 28px; }
+.modal-footer { padding:16px 28px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+
+/* SEARCH */
+.search-box {
+  display:flex; align-items:center; gap:8px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:var(--radius); padding:8px 14px;
+  min-width:260px;
+}
+.search-box input { background:none; border:none; outline:none; color:var(--text); font-size:14px; width:100%; }
+.search-box svg { color:var(--text-muted); flex-shrink:0; }
+
+/* DETAIL PANEL */
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.detail-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:24px;
+}
+.detail-card h4 { font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px; }
+.detail-field { margin-bottom:14px; }
+.detail-field label { font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px; }
+.detail-field span { font-size:14px; color:var(--text); }
+
+/* CHAT */
+.chat-box {
+  background:var(--surface2); border-radius:var(--radius);
+  height:360px; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px;
+}
+.msg { max-width:80%; padding:10px 14px; border-radius:10px; font-size:13px; line-height:1.5; }
+.msg-bot { background:var(--surface3); color:var(--text); align-self:flex-start; border-radius:4px 10px 10px 10px; }
+.msg-cliente { background:var(--gold-dim); color:var(--gold-light); align-self:flex-end; border-radius:10px 4px 10px 10px; }
+.msg-time { font-size:10px; color:var(--text-muted); margin-top:3px; }
+
+/* STATUS dot */
+.dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+.dot-green { background:var(--green); }
+.dot-red { background:var(--red); }
+.dot-gray { background:var(--text-muted); }
+
+/* TOAST */
+.toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+.toast {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px 18px; font-size:13px; color:var(--text); box-shadow:var(--shadow);
+  animation:fadeIn 0.2s ease; min-width:220px;
+}
+.toast.success { border-left:3px solid var(--green); }
+.toast.error { border-left:3px solid var(--red); }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* UPLOAD AREA */
+.upload-area {
+  border:2px dashed var(--border); border-radius:var(--radius); padding:32px;
+  text-align:center; cursor:pointer; transition:border 0.2s;
+}
+.upload-area:hover { border-color:var(--gold); }
+.upload-area p { color:var(--text-muted); font-size:13px; }
+
+/* EMPTY STATE */
+.empty { text-align:center; padding:48px; color:var(--text-muted); }
+.empty svg { width:48px; height:48px; margin-bottom:12px; opacity:0.3; }
+.empty p { font-size:14px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>Lex CRM</h1>
+    <span>Advocacia Previdenciária</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('contatos')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Contatos
+    </div>
+    <div class="nav-item" onclick="showPage('agendamentos')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Agendamentos
+    </div>
+    <div class="nav-item" onclick="showPage('usuarios')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      Usuários
+    </div>
+    <div class="nav-item" onclick="showPage('instancias')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
+      WhatsApp
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <span>v1.0 — Lex CRM</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Dashboard</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="theme-icon" id="theme-icon">🌙</span>
+      <button class="theme-toggle" onclick="alternarTema()" title="Alternar dark/light"></button>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Contatos</div>
+        <div class="stat-value" id="stat-contatos">—</div>
+        <div class="stat-sub">Total cadastrado</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Agendamentos</div>
+        <div class="stat-value" id="stat-agendamentos">—</div>
+        <div class="stat-sub">Pendentes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Usuários</div>
+        <div class="stat-value" id="stat-usuarios">—</div>
+        <div class="stat-sub">Ativos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">WhatsApp</div>
+        <div class="stat-value" id="stat-instancias">—</div>
+        <div class="stat-sub">Instâncias</div>
+      </div>
+    </div>
+    <div class="table-container">
+      <div class="table-header"><h3>Atividade Recente</h3></div>
+      <table>
+        <thead><tr><th>Contato</th><th>Telefone</th><th>Último Contato</th></tr></thead>
+        <tbody id="tbody-recentes">
+          <tr><td colspan="3" class="empty"><p>Nenhuma atividade registrada</p></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CONTATOS -->
+  <div class="page" id="page-contatos">
+    <div class="table-container">
+      <div class="table-header">
+        <h3>Contatos</h3>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="search-box">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="search-contatos" placeholder="Buscar por nome, telefone ou CPF..." oninput="buscarContatos()">
+          </div>
+          <button class="btn btn-gold" onclick="abrirModalContato()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Novo Contato
+          </button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>Telefone</th><th>CPF</th><th>Cadastro</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tbody-contatos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DETALHE CONTATO -->
+  <div class="page" id="page-contato-detalhe">
+    <div id="detalhe-content"></div>
+  </div>
+
+  <!-- AGENDAMENTOS -->
+  <div class="page" id="page-agendamentos">
+    <div class="table-container">
+      <div class="table-header">
+        <h3>Agendamentos</h3>
+        <button class="btn btn-gold" onclick="abrirModalAgendamento()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Novo Agendamento
+        </button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Cliente</th><th>Telefone</th><th>Data</th><th>Hora</th><th>Tipo</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tbody-agendamentos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- USUÁRIOS -->
+  <div class="page" id="page-usuarios">
+    <div class="table-container">
+      <div class="table-header">
+        <h3>Usuários</h3>
+        <button class="btn btn-gold" onclick="abrirModalUsuario()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Novo Usuário
+        </button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Telefone</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tbody-usuarios"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INSTÂNCIAS WHATSAPP -->
+  <div class="page" id="page-instancias">
+    <div class="table-container">
+      <div class="table-header">
+        <h3>Instâncias WhatsApp</h3>
+        <button class="btn btn-gold" onclick="abrirModalInstancia()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Conectar WhatsApp
+        </button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>URL Evolution</th><th>Instância</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tbody-instancias"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- MODALS -->
+
+<!-- Modal Contato -->
+<div class="modal-overlay" id="modal-contato">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-contato-title">Novo Contato</h3>
+      <button class="btn btn-outline btn-icon" onclick="fecharModal('modal-contato')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input type="text" class="form-input" id="contato-nome" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone *</label>
+          <input type="text" class="form-input" id="contato-telefone" placeholder="5585999999999">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CPF</label>
+          <input type="text" class="form-input" id="contato-cpf" placeholder="000.000.000-00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="contato-email" placeholder="email@exemplo.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <textarea class="form-textarea" id="contato-obs" placeholder="Notas sobre o contato..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-contato')">Cancelar</button>
+      <button class="btn btn-gold" onclick="salvarContato()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Usuário -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Novo Usuário</h3>
+      <button class="btn btn-outline btn-icon" onclick="fecharModal('modal-usuario')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nome *</label>
+          <input type="text" class="form-input" id="usuario-nome">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" class="form-input" id="usuario-email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha *</label>
+          <input type="password" class="form-input" id="usuario-senha">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="text" class="form-input" id="usuario-telefone">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Perfil</label>
+        <select class="form-select" id="usuario-perfil">
+          <option value="advogado">Advogado</option>
+          <option value="atendente" selected>Atendente</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-gold" onclick="salvarUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Instância -->
+<div class="modal-overlay" id="modal-instancia">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Conectar WhatsApp</h3>
+      <button class="btn btn-outline btn-icon" onclick="fecharModal('modal-instancia')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome da Conexão</label>
+        <input type="text" class="form-input" id="inst-nome" placeholder="Ex: Principal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL da Evolution API</label>
+        <input type="text" class="form-input" id="inst-url" placeholder="https://sua-evolution.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="text" class="form-input" id="inst-key" placeholder="Sua chave de API">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome da Instância</label>
+        <input type="text" class="form-input" id="inst-instance" placeholder="Ex: advocacia">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-instancia')">Cancelar</button>
+      <button class="btn btn-gold" onclick="salvarInstancia()">Conectar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Agendamento -->
+<div class="modal-overlay" id="modal-agendamento">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Novo Agendamento</h3>
+      <button class="btn btn-outline btn-icon" onclick="fecharModal('modal-agendamento')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Contato</label>
+        <select class="form-select" id="ag-contato"></select>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Data *</label>
+          <input type="date" class="form-input" id="ag-data">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora *</label>
+          <select class="form-select" id="ag-hora">
+            <option>08:00</option><option>09:00</option><option>10:00</option>
+            <option>11:00</option><option>14:00</option><option>15:00</option>
+            <option>16:00</option><option>17:00</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="ag-tipo">
+          <option value="primeira_consulta">Primeira Consulta</option>
+          <option value="retorno">Retorno</option>
+          <option value="urgente">Urgente</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <textarea class="form-textarea" id="ag-obs" placeholder="Detalhes do agendamento..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-agendamento')">Cancelar</button>
+      <button class="btn btn-gold" onclick="salvarAgendamento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+const API = 'http://localhost:8001/api';
+
+// ─── NAVEGAÇÃO ───────────────────────────────────────────
+const titles = {
+  dashboard:'Dashboard', contatos:'Contatos', agendamentos:'Agendamentos',
+  usuarios:'Usuários', instancias:'WhatsApp', 'contato-detalhe':'Detalhes do Contato'
+};
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if(n.textContent.toLowerCase().includes(page.split('-')[0])) n.classList.add('active');
+  });
+  document.getElementById('topbar-title').textContent = titles[page] || page;
+  const actions = document.getElementById('topbar-actions');
+  actions.innerHTML = '';
+  if(page === 'contato-detalhe') {
+    actions.innerHTML = `<button class="btn btn-outline" onclick="showPage('contatos')">← Voltar</button>`;
+  }
+  const loaders = {
+    dashboard: carregarDashboard,
+    contatos: carregarContatos,
+    agendamentos: carregarAgendamentos,
+    usuarios: carregarUsuarios,
+    instancias: carregarInstancias,
+  };
+  if(loaders[page]) loaders[page]();
+}
+
+// ─── TOAST ───────────────────────────────────────────────
+function toast(msg, tipo='success') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${tipo}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ─── API HELPERS ─────────────────────────────────────────
+async function api(path, opts={}) {
+  const r = await fetch(API + path, {
+    headers:{'Content-Type':'application/json'},
+    ...opts
+  });
+  if(!r.ok) { const e = await r.json().catch(()=>({detail:'Erro'})); throw new Error(e.detail||'Erro'); }
+  return r.json();
+}
+
+// ─── MODAIS ──────────────────────────────────────────────
+function abrirModal(id) { document.getElementById(id).classList.add('open'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── DASHBOARD ───────────────────────────────────────────
+async function carregarDashboard() {
+  try {
+    const d = await api('/dashboard');
+    document.getElementById('stat-contatos').textContent = d.total_contatos;
+    document.getElementById('stat-agendamentos').textContent = d.total_agendamentos;
+    document.getElementById('stat-usuarios').textContent = d.total_usuarios;
+    document.getElementById('stat-instancias').textContent = d.total_instancias;
+    const tbody = document.getElementById('tbody-recentes');
+    if(d.recentes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty"><p>Nenhuma atividade</p></td></tr>';
+    } else {
+      tbody.innerHTML = d.recentes.map(r => `
+        <tr>
+          <td>${r.nome||'—'}</td>
+          <td>${r.telefone}</td>
+          <td>${formatDate(r.criado_em)}</td>
+        </tr>`).join('');
+    }
+  } catch(e) { toast('Erro ao carregar dashboard','error'); }
+}
+
+// ─── CONTATOS ────────────────────────────────────────────
+async function carregarContatos(q='') {
+  try {
+    const list = await api('/contatos' + (q ? `?q=${encodeURIComponent(q)}` : ''));
+    const tbody = document.getElementById('tbody-contatos');
+    if(list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty"><p>Nenhum contato cadastrado</p></td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(c => `
+      <tr>
+        <td><strong>${c.nome||'—'}</strong></td>
+        <td>${c.telefone}</td>
+        <td>${c.cpf||'—'}</td>
+        <td>${formatDate(c.criado_em)}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="verContato(${c.id})">Ver</button>
+            <button class="btn btn-danger btn-sm" onclick="deletarContato(${c.id})">Excluir</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) { toast('Erro ao carregar contatos','error'); }
+}
+
+function buscarContatos() {
+  const q = document.getElementById('search-contatos').value;
+  carregarContatos(q);
+}
+
+function abrirModalContato() {
+  document.getElementById('contato-nome').value = '';
+  document.getElementById('contato-telefone').value = '';
+  document.getElementById('contato-cpf').value = '';
+  document.getElementById('contato-email').value = '';
+  document.getElementById('contato-obs').value = '';
+  abrirModal('modal-contato');
+}
+
+async function salvarContato() {
+  const telefone = document.getElementById('contato-telefone').value.trim();
+  if(!telefone) { toast('Telefone é obrigatório','error'); return; }
+  try {
+    await api('/contatos', {
+      method:'POST',
+      body: JSON.stringify({
+        nome: document.getElementById('contato-nome').value,
+        telefone,
+        cpf: document.getElementById('contato-cpf').value,
+        email: document.getElementById('contato-email').value,
+        observacoes: document.getElementById('contato-obs').value,
+      })
+    });
+    fecharModal('modal-contato');
+    toast('Contato salvo!');
+    carregarContatos();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deletarContato(id) {
+  if(!confirm('Excluir este contato?')) return;
+  try {
+    await api(`/contatos/${id}`, {method:'DELETE'});
+    toast('Contato excluído!');
+    carregarContatos();
+  } catch(e) { toast('Erro ao excluir','error'); }
+}
+
+async function verContato(id) {
+  try {
+    const c = await api(`/contatos/${id}`);
+    const div = document.getElementById('detalhe-content');
+    const tipoLabel = {'primeira_consulta':'1ª Consulta','retorno':'Retorno','urgente':'Urgente'};
+    const statusBadge = {'agendado':'badge-gold','realizado':'badge-green','cancelado':'badge-red'};
+
+    div.innerHTML = `
+      <div class="detail-grid" style="margin-bottom:24px">
+        <div class="detail-card">
+          <h4>Dados do Contato</h4>
+          <div class="detail-field"><label>Nome</label><span>${c.nome||'—'}</span></div>
+          <div class="detail-field"><label>Telefone</label><span>${c.telefone}</span></div>
+          <div class="detail-field"><label>CPF</label><span>${c.cpf||'—'}</span></div>
+          <div class="detail-field"><label>Email</label><span>${c.email||'—'}</span></div>
+          <div class="detail-field"><label>Observações</label><span>${c.observacoes||'—'}</span></div>
+        </div>
+        <div class="detail-card">
+          <h4>Agendamentos</h4>
+          ${c.agendamentos.length === 0 ? '<p style="color:var(--text-muted);font-size:13px">Nenhum agendamento</p>' :
+            c.agendamentos.map(a => `
+              <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:13px">${formatDateBR(a.data)} às ${a.hora}</span>
+                  <span class="badge ${statusBadge[a.status]||'badge-gray'}">${a.status}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${tipoLabel[a.tipo]||a.tipo}</div>
+              </div>`).join('')
+          }
+        </div>
+      </div>
+
+      <div class="detail-card" style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h4 style="margin:0">Documentos</h4>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer">
+            + Enviar arquivo
+            <input type="file" style="display:none" onchange="uploadDocumento(${id}, this)">
+          </label>
+        </div>
+        <div id="lista-docs-${id}">
+          ${c.documentos.length === 0 ? '<p style="color:var(--text-muted);font-size:13px">Nenhum documento</p>' :
+            c.documentos.map(d => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                <div>
+                  <span style="font-size:13px">📄 ${d.nome}</span>
+                  <span style="font-size:11px;color:var(--text-muted);margin-left:8px">${formatDate(d.criado_em)}</span>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="deletarDoc(${d.id},${id})">Excluir</button>
+              </div>`).join('')
+          }
+        </div>
+      </div>`;
+
+    showPage('contato-detalhe');
+  } catch(e) { toast('Erro ao carregar contato','error'); }
+}
+
+async function uploadDocumento(contatoId, input) {
+  const file = input.files[0];
+  if(!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const r = await fetch(`${API}/contatos/${contatoId}/documentos`, {method:'POST', body:form});
+    if(!r.ok) throw new Error();
+    toast('Documento enviado!');
+    verContato(contatoId);
+  } catch(e) { toast('Erro ao enviar documento','error'); }
+}
+
+async function deletarDoc(docId, contatoId) {
+  if(!confirm('Excluir este documento?')) return;
+  try {
+    await api(`/documentos/${docId}`, {method:'DELETE'});
+    toast('Documento excluído!');
+    verContato(contatoId);
+  } catch(e) { toast('Erro','error'); }
+}
+
+// ─── AGENDAMENTOS ────────────────────────────────────────
+async function carregarAgendamentos() {
+  try {
+    const list = await api('/agendamentos');
+    const tbody = document.getElementById('tbody-agendamentos');
+    const tipoLabel = {'primeira_consulta':'1ª Consulta','retorno':'Retorno','urgente':'Urgente'};
+    const statusBadge = {'agendado':'badge-gold','realizado':'badge-green','cancelado':'badge-red'};
+    if(list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty"><p>Nenhum agendamento</p></td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(a => `
+      <tr>
+        <td><strong>${a.contato_nome||'—'}</strong></td>
+        <td>${a.contato_telefone||'—'}</td>
+        <td>${formatDateBR(a.data)}</td>
+        <td>${a.hora}</td>
+        <td><span class="badge badge-blue">${tipoLabel[a.tipo]||a.tipo}</span></td>
+        <td><span class="badge ${statusBadge[a.status]||'badge-gray'}">${a.status}</span></td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="marcarRealizado(${a.id})">✓</button>
+            <button class="btn btn-danger btn-sm" onclick="deletarAgendamento(${a.id})">✕</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) { toast('Erro ao carregar agendamentos','error'); }
+}
+
+async function abrirModalAgendamento() {
+  const contatos = await api('/contatos');
+  const sel = document.getElementById('ag-contato');
+  sel.innerHTML = contatos.map(c => `<option value="${c.id}">${c.nome||c.telefone}</option>`).join('');
+  abrirModal('modal-agendamento');
+}
+
+async function salvarAgendamento() {
+  try {
+    await api('/agendamentos', {
+      method:'POST',
+      body: JSON.stringify({
+        contato_id: parseInt(document.getElementById('ag-contato').value),
+        data: document.getElementById('ag-data').value,
+        hora: document.getElementById('ag-hora').value,
+        tipo: document.getElementById('ag-tipo').value,
+        observacoes: document.getElementById('ag-obs').value,
+      })
+    });
+    fecharModal('modal-agendamento');
+    toast('Agendamento criado!');
+    carregarAgendamentos();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function marcarRealizado(id) {
+  try {
+    await api(`/agendamentos/${id}/status?status=realizado`, {method:'PUT'});
+    toast('Marcado como realizado!');
+    carregarAgendamentos();
+  } catch(e) { toast('Erro','error'); }
+}
+
+async function deletarAgendamento(id) {
+  if(!confirm('Cancelar agendamento?')) return;
+  try {
+    await api(`/agendamentos/${id}`, {method:'DELETE'});
+    toast('Agendamento removido!');
+    carregarAgendamentos();
+  } catch(e) { toast('Erro','error'); }
+}
+
+// ─── USUÁRIOS ────────────────────────────────────────────
+async function carregarUsuarios() {
+  try {
+    const list = await api('/usuarios');
+    const tbody = document.getElementById('tbody-usuarios');
+    const perfilBadge = {'advogado':'badge-gold','atendente':'badge-blue','admin':'badge-red'};
+    if(list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty"><p>Nenhum usuário cadastrado</p></td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(u => `
+      <tr>
+        <td><strong>${u.nome}</strong></td>
+        <td>${u.email}</td>
+        <td><span class="badge ${perfilBadge[u.perfil]||'badge-gray'}">${u.perfil}</span></td>
+        <td>${u.telefone||'—'}</td>
+        <td><span class="badge ${u.ativo ? 'badge-green':'badge-red'}">${u.ativo ? 'Ativo':'Inativo'}</span></td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deletarUsuario(${u.id})">Excluir</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { toast('Erro ao carregar usuários','error'); }
+}
+
+function abrirModalUsuario() {
+  ['usuario-nome','usuario-email','usuario-senha','usuario-telefone'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  abrirModal('modal-usuario');
+}
+
+async function salvarUsuario() {
+  try {
+    await api('/usuarios', {
+      method:'POST',
+      body: JSON.stringify({
+        nome: document.getElementById('usuario-nome').value,
+        email: document.getElementById('usuario-email').value,
+        senha: document.getElementById('usuario-senha').value,
+        perfil: document.getElementById('usuario-perfil').value,
+        telefone: document.getElementById('usuario-telefone').value,
+      })
+    });
+    fecharModal('modal-usuario');
+    toast('Usuário criado!');
+    carregarUsuarios();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deletarUsuario(id) {
+  if(!confirm('Excluir este usuário?')) return;
+  try {
+    await api(`/usuarios/${id}`, {method:'DELETE'});
+    toast('Usuário excluído!');
+    carregarUsuarios();
+  } catch(e) { toast('Erro','error'); }
+}
+
+// ─── INSTÂNCIAS ──────────────────────────────────────────
+async function carregarInstancias() {
+  try {
+    const list = await api('/instancias');
+    const tbody = document.getElementById('tbody-instancias');
+    if(list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty"><p>Nenhuma instância configurada</p></td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(i => `
+      <tr>
+        <td><strong>${i.nome}</strong></td>
+        <td style="font-size:12px;color:var(--text-muted)">${i.evolution_url}</td>
+        <td>${i.instance_name}</td>
+        <td id="status-${i.id}"><span class="badge badge-gray">verificando...</span></td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="verificarStatus(${i.id})">Verificar</button>
+            <button class="btn btn-danger btn-sm" onclick="deletarInstancia(${i.id})">Excluir</button>
+          </div>
+        </td>
+      </tr>`).join('');
+    list.forEach(i => verificarStatus(i.id));
+  } catch(e) { toast('Erro ao carregar instâncias','error'); }
+}
+
+function abrirModalInstancia() {
+  ['inst-nome','inst-url','inst-key','inst-instance'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  abrirModal('modal-instancia');
+}
+
+async function salvarInstancia() {
+  try {
+    await api('/instancias', {
+      method:'POST',
+      body: JSON.stringify({
+        nome: document.getElementById('inst-nome').value,
+        evolution_url: document.getElementById('inst-url').value,
+        evolution_key: document.getElementById('inst-key').value,
+        instance_name: document.getElementById('inst-instance').value,
+      })
+    });
+    fecharModal('modal-instancia');
+    toast('Instância conectada!');
+    carregarInstancias();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function verificarStatus(id) {
+  try {
+    const r = await api(`/instancias/${id}/status`);
+    const el = document.getElementById(`status-${id}`);
+    if(!el) return;
+    const connected = r.status === 'open';
+    el.innerHTML = `<span class="dot ${connected?'dot-green':'dot-red'}"></span><span class="badge ${connected?'badge-green':'badge-red'}">${connected?'Conectado':r.status}</span>`;
+  } catch(e) {}
+}
+
+async function deletarInstancia(id) {
+  if(!confirm('Excluir esta instância?')) return;
+  try {
+    await api(`/instancias/${id}`, {method:'DELETE'});
+    toast('Instância removida!');
+    carregarInstancias();
+  } catch(e) { toast('Erro','error'); }
+}
+
+// ─── UTILS ───────────────────────────────────────────────
+function formatDate(iso) {
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+function formatDateBR(str) {
+  if(!str) return '—';
+  if(str.includes('-')) {
+    const [y,m,d] = str.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return str;
+}
+
+// ─── TEMA ────────────────────────────────────────────────
+function alternarTema() {
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('theme-icon').textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('crm-tema', isLight ? 'light' : 'dark');
+}
+
+function aplicarTema() {
+  const saved = localStorage.getItem('crm-tema');
+  if(saved === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-icon').textContent = '☀️';
+  }
+}
+
+// Fechar modal ao clicar fora
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target === el) el.classList.remove('open'); });
+});
+
+// Init
+aplicarTema();
+carregarDashboard();
+</script>
+</body>
+</html>
