@@ -117,6 +117,11 @@ except Exception as e:
     print("Verifique DATABASE_URL no server.py", flush=True)
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 # ─── MODELS ──────────────────────────────────────────────
 
 class InstanciaCreate(BaseModel):
