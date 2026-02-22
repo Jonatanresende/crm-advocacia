@@ -1621,6 +1621,53 @@
     // Init
     aplicarTema();
     carregarDashboard();
+
+    async function abrirDetalheAgendamento(id, event) {
+      try {
+        const list = await api('/agendamentos');
+        const a = list.find(x => x.id === id);
+        if (!a) return;
+
+        let contato = null;
+        if (a.cliente_id) {
+          try { contato = await api('/contatos/' + a.cliente_id); } catch (e) { }
+        }
+
+        const tipoLabel = { 'primeira_consulta': '1ª Consulta', 'retorno': 'Retorno', 'urgente': 'Urgente' };
+        const statusBadge = { 'agendado': 'badge-gold', 'realizado': 'badge-green', 'cancelado': 'badge-red', 'ativo': 'badge-gold' };
+
+        document.getElementById('modal-title').textContent = 'Agendamento #' + a.id;
+        document.getElementById('modal-body').innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4>Dados do Agendamento</h4>
+          <div class="detail-field"><label>Cliente</label><span>${a.contato_nome || '—'}</span></div>
+          <div class="detail-field"><label>Telefone</label><span>${a.contato_telefone || '—'}</span></div>
+          <div class="detail-field"><label>Data</label><span>${formatDateBR(a.data_consulta) || '—'}</span></div>
+          <div class="detail-field"><label>Hora</label><span>${a.hora_consulta || '—'}</span></div>
+          <div class="detail-field"><label>Tipo</label><span>${tipoLabel[a.tipo_consulta] || a.tipo_consulta || '—'}</span></div>
+          <div class="detail-field"><label>Status</label><span class="badge ${statusBadge[a.status] || 'badge-gray'}">${a.status || '—'}</span></div>
+          ${a.observacoes ? `<div class="detail-field"><label>Observações</label><span>${a.observacoes}</span></div>` : ''}
+        </div>
+        ${contato ? `
+        <div class="detail-card">
+          <h4>Dados do Cliente</h4>
+          <div class="detail-field"><label>Nome</label><span>${contato.nome || '—'}</span></div>
+          <div class="detail-field"><label>CPF</label><span>${contato.cpf || '—'}</span></div>
+          <div class="detail-field"><label>Email</label><span>${contato.email || '—'}</span></div>
+          <div class="detail-field"><label>Observações</label><span style="white-space:pre-wrap;font-size:12px">${contato.observacoes || '—'}</span></div>
+        </div>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-outline" onclick="marcarRealizado(${a.id});fecharModal()">✓ Marcar Realizado</button>
+        <button class="btn btn-danger" onclick="deletarAgendamento(${a.id});fecharModal()">✕ Cancelar</button>
+        ${contato ? `<button class="btn btn-outline" onclick="fecharModal();abrirContato(${contato.id})">Ver Contato Completo</button>` : ''}
+      </div>
+    `;
+        abrirModal('modal-generico');
+      } catch (e) { console.error(e); toast('Erro ao abrir agendamento', 'error'); }
+    }
+
   </script>
 
   <!-- Modal Genérico para detalhes -->
