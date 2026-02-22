@@ -1328,10 +1328,10 @@
             c.agendamentos.map(a => `
               <div style="padding:10px 0;border-bottom:1px solid var(--border)">
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:13px">${formatDateBR(a.data)} às ${a.hora}</span>
+                  <span style="font-size:13px">${formatDateBR(a.data_consulta)} às ${a.hora_consulta}</span>
                   <span class="badge ${statusBadge[a.status] || 'badge-gray'}">${a.status}</span>
                 </div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${tipoLabel[a.tipo] || a.tipo}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${tipoLabel[a.tipo_consulta] || a.tipo_consulta}</div>
               </div>`).join('')
           }
         </div>
@@ -1400,9 +1400,9 @@
       <tr>
         <td><strong>${a.contato_nome || '—'}</strong></td>
         <td>${a.contato_telefone || '—'}</td>
-        <td>${formatDateBR(a.data)}</td>
-        <td>${a.hora}</td>
-        <td><span class="badge badge-blue">${tipoLabel[a.tipo] || a.tipo}</span></td>
+        <td>${formatDateBR(a.data_consulta)}</td>
+        <td>${a.hora_consulta || "—"}</td>
+        <td><span class="badge badge-blue">${tipoLabel[a.tipo_consulta] || a.tipo_consulta}</span></td>
         <td><span class="badge ${statusBadge[a.status] || 'badge-gray'}">${a.status}</span></td>
         <td>
           <div style="display:flex;gap:6px">
