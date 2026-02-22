@@ -1213,7 +1213,7 @@
 
     // ─── MODAIS ──────────────────────────────────────────────
     function abrirModal(id) { document.getElementById(id).classList.add('open'); }
-    function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+    function fecharModal(id) { if (id) { document.getElementById(id).classList.remove('open'); } else { document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); } }
 
     // ─── DASHBOARD ───────────────────────────────────────────
     async function carregarDashboard() {
@@ -1397,14 +1397,14 @@
           return;
         }
         tbody.innerHTML = list.map(a => `
-      <tr>
+      <tr style="cursor:pointer" onclick="abrirDetalheAgendamento(${a.id}, event)">
         <td><strong>${a.contato_nome || '—'}</strong></td>
         <td>${a.contato_telefone || '—'}</td>
-        <td>${formatDateBR(a.data_consulta)}</td>
-        <td>${a.hora_consulta || "—"}</td>
-        <td><span class="badge badge-blue">${tipoLabel[a.tipo_consulta] || a.tipo_consulta}</span></td>
-        <td><span class="badge ${statusBadge[a.status] || 'badge-gray'}">${a.status}</span></td>
-        <td>
+        <td>${formatDateBR(a.data_consulta) || '—'}</td>
+        <td>${a.hora_consulta || '—'}</td>
+        <td><span class="badge badge-blue">${tipoLabel[a.tipo_consulta] || a.tipo_consulta || '—'}</span></td>
+        <td><span class="badge ${statusBadge[a.status] || 'badge-gray'}">${a.status || '—'}</span></td>
+        <td onclick="event.stopPropagation()">
           <div style="display:flex;gap:6px">
             <button class="btn btn-outline btn-sm" onclick="marcarRealizado(${a.id})">✓</button>
             <button class="btn btn-danger btn-sm" onclick="deletarAgendamento(${a.id})">✕</button>
@@ -1622,6 +1622,18 @@
     aplicarTema();
     carregarDashboard();
   </script>
+
+  <!-- Modal Genérico para detalhes -->
+  <div class="modal-overlay" id="modal-generico" onclick="fecharModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:700px;width:95%">
+      <div class="modal-header">
+        <h3 id="modal-title">Detalhes</h3>
+        <button class="btn-close" onclick="fecharModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
 </body>
 
 </html>
