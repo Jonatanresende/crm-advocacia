@@ -1418,7 +1418,15 @@
     async function abrirModalAgendamento() {
       const contatos = await api('/contatos');
       const sel = document.getElementById('ag-contato');
-      sel.innerHTML = contatos.map(c => `<option value="${c.id}">${c.nome || c.telefone}</option>`).join('');
+      sel.innerHTML = '<option value="">Selecione um contato...</option>' +
+        contatos.map(c => `<option value="${c.id}">${c.nome || c.telefone}</option>`).join('');
+      sel.value = '';
+      // Limpar campos do formulário
+      document.getElementById('ag-data').value = '';
+      document.getElementById('ag-hora').value = '08:00';
+      document.getElementById('ag-tipo').value = 'primeira_consulta';
+      const obs = document.getElementById('ag-obs');
+      if (obs) obs.value = '';
       abrirModal('modal-agendamento');
     }
 

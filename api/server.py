@@ -59,8 +59,11 @@ def init_db():
             atualizado_em TIMESTAMP DEFAULT NOW()
         )
     """)
-    # Migração: adicionar coluna google_event_id se não existir
+    # Migrações: adicionar colunas novas se não existirem
+    cur.execute("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email TEXT")
+    cur.execute("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS observacoes TEXT")
     cur.execute("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS google_event_id TEXT")
+    cur.execute("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS observacoes TEXT")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS conversas (
             id SERIAL PRIMARY KEY,
@@ -318,9 +321,10 @@ def criar_agendamento(data: AgendamentoCreate):
     try:
         # Buscar nome do cliente para o título do evento
         cur.execute("SELECT nome, telefone, email FROM clientes WHERE id=%s", (data.cliente_id,))
-        cliente = cur.fetchone()
-        nome = dict(cliente)["nome"] if cliente else "Cliente"
-        email = dict(cliente).get("email") if cliente else None
+        row = cur.fetchone()
+        cliente_dict = dict(row) if row else {}
+        nome = cliente_dict.get("nome", "Cliente") or "Cliente"
+        email = cliente_dict.get("email") or None
         tipo_label = {"primeira_consulta": "1ª Consulta", "retorno": "Retorno", "urgente": "Urgente"}
         titulo = f"{tipo_label.get(data.tipo, data.tipo)} — {nome}"
         descricao = data.observacoes or ""
@@ -374,6 +378,27 @@ def deletar_agendamento(id: int):
         return {"ok": True}
     finally:
         cur.close(); conn.close()
+
+
+@app.get("/api/horarios-ocupados/{data}")
+def horarios_ocupados(data: str):
+    """Retorna horários ocupados em uma data — consultado pelo bot."""
+    try:
+        from api.google_calendar import listar_horarios_ocupados
+        ocupados = listar_horarios_ocupados(data)
+        return ocupados
+    except Exception as e:
+        print(f"HORARIOS_OCUPADOS_ERRO: {e}", flush=True)
+        # Fallback banco
+        conn = get_db(); cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT hora_consulta FROM agendamentos
+                WHERE data_consulta=%s AND status='ativo'
+            """, (data,))
+            return [r["hora_consulta"] for r in cur.fetchall()]
+        finally:
+            cur.close(); conn.close()
 
 @app.get("/api/horarios-disponiveis")
 def horarios_disponiveis():
