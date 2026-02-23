@@ -1105,42 +1105,60 @@
 
   <!-- Modal Agendamento -->
   <div class="modal-overlay" id="modal-agendamento">
-    <div class="modal">
+    <div class="modal" style="max-width:580px;width:95%">
       <div class="modal-header">
         <h3>Novo Agendamento</h3>
         <button class="btn btn-outline btn-icon" onclick="fecharModal('modal-agendamento')">✕</button>
       </div>
       <div class="modal-body">
+        <!-- Contato -->
         <div class="form-group">
-          <label class="form-label">Contato</label>
-          <select class="form-select" id="ag-contato"></select>
+          <label class="form-label">Contato *</label>
+          <select class="form-select" id="ag-contato">
+            <option value="">Selecione um contato...</option>
+          </select>
         </div>
+
+        <!-- Calendário visual -->
+        <div class="form-group">
+          <label class="form-label">Data *</label>
+          <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+            <!-- Header do calendário -->
+            <div
+              style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border)">
+              <button type="button" onclick="mudarSemana(-1)"
+                style="background:none;border:none;cursor:pointer;color:var(--text);font-size:18px;padding:4px 8px">‹</button>
+              <span id="cal-titulo" style="font-weight:600;font-size:14px;color:var(--text)">Carregando...</span>
+              <button type="button" onclick="mudarSemana(1)"
+                style="background:none;border:none;cursor:pointer;color:var(--text);font-size:18px;padding:4px 8px">›</button>
+            </div>
+            <!-- Dias da semana -->
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:12px" id="cal-dias">
+              <div style="text-align:center;color:var(--text-muted);font-size:12px">Carregando...</div>
+            </div>
+          </div>
+          <input type="hidden" id="ag-data">
+        </div>
+
+        <!-- Horários disponíveis -->
+        <div class="form-group" id="ag-horarios-group" style="display:none">
+          <label class="form-label">Horário disponível *</label>
+          <div id="ag-horarios-grid" style="display:flex;flex-wrap:wrap;gap:8px">
+            <span style="color:var(--text-muted);font-size:13px">Selecione uma data primeiro</span>
+          </div>
+          <input type="hidden" id="ag-hora">
+        </div>
+
+        <!-- Tipo e Obs -->
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">Data *</label>
-            <input type="date" class="form-input" id="ag-data">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Hora *</label>
-            <select class="form-select" id="ag-hora">
-              <option>08:00</option>
-              <option>09:00</option>
-              <option>10:00</option>
-              <option>11:00</option>
-              <option>14:00</option>
-              <option>15:00</option>
-              <option>16:00</option>
-              <option>17:00</option>
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="ag-tipo">
+              <option value="primeira_consulta">Primeira Consulta</option>
+              <option value="retorno">Retorno</option>
+              <option value="urgente">Urgente</option>
             </select>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-select" id="ag-tipo">
-            <option value="primeira_consulta">Primeira Consulta</option>
-            <option value="retorno">Retorno</option>
-            <option value="urgente">Urgente</option>
-          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Observações</label>
@@ -1149,7 +1167,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="fecharModal('modal-agendamento')">Cancelar</button>
-        <button class="btn btn-gold" onclick="salvarAgendamento()">Salvar</button>
+        <button class="btn btn-gold" onclick="salvarAgendamento()">Salvar Agendamento</button>
       </div>
     </div>
   </div>
@@ -1415,37 +1433,205 @@
       } catch (e) { toast('Erro ao carregar agendamentos', 'error'); }
     }
 
+    // ─── CALENDÁRIO DE AGENDAMENTO ──────────────────────────
+    let _semanaOffset = 0;
+    let _ocupadosCache = {};
+    let _dataSelecionada = null;
+
     async function abrirModalAgendamento() {
+      _semanaOffset = 0;
+      _dataSelecionada = null;
+      _ocupadosCache = {};
+
+      // Carregar contatos
       const contatos = await api('/contatos');
       const sel = document.getElementById('ag-contato');
       sel.innerHTML = '<option value="">Selecione um contato...</option>' +
         contatos.map(c => `<option value="${c.id}">${c.nome || c.telefone}</option>`).join('');
       sel.value = '';
-      // Limpar campos do formulário
+
+      // Limpar campos
       document.getElementById('ag-data').value = '';
-      document.getElementById('ag-hora').value = '08:00';
+      document.getElementById('ag-hora').value = '';
       document.getElementById('ag-tipo').value = 'primeira_consulta';
+      document.getElementById('ag-horarios-group').style.display = 'none';
       const obs = document.getElementById('ag-obs');
       if (obs) obs.value = '';
+
       abrirModal('modal-agendamento');
+      await renderizarCalendario();
+    }
+
+    async function renderizarCalendario() {
+      const titulo = document.getElementById('cal-titulo');
+      const grid = document.getElementById('cal-dias');
+      titulo.textContent = 'Carregando...';
+      grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">⏳ Buscando disponibilidade...</div>';
+
+      // Calcular dias da semana
+      const hoje = new Date();
+      const inicioSemana = new Date(hoje);
+      inicioSemana.setDate(hoje.getDate() - hoje.getDay() + 1 + (_semanaOffset * 7));
+
+      const dias = [];
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(inicioSemana);
+        d.setDate(inicioSemana.getDate() + i);
+        dias.push(d);
+      }
+
+      // Título da semana
+      const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const ini = dias[0]; const fim = dias[4];
+      titulo.textContent = `${ini.getDate()} ${meses[ini.getMonth()]} — ${fim.getDate()} ${meses[fim.getMonth()]} ${fim.getFullYear()}`;
+
+      // Buscar ocupados para cada dia em paralelo
+      const ocupadosPorDia = {};
+      await Promise.all(dias.map(async d => {
+        const key = d.toISOString().split('T')[0];
+        if (_ocupadosCache[key] !== undefined) {
+          ocupadosPorDia[key] = _ocupadosCache[key];
+          return;
+        }
+        try {
+          const res = await fetch(`/api/horarios-ocupados/${key}`);
+          const ocupados = await res.json();
+          _ocupadosCache[key] = ocupados;
+          ocupadosPorDia[key] = ocupados;
+        } catch (e) {
+          ocupadosPorDia[key] = [];
+        }
+      }));
+
+      const TOTAL_HORARIOS = 8; // 08,09,10,11,13,14,15,16
+      const diaSemNomes = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+
+      grid.innerHTML = '';
+      // Header dos dias
+      diaSemNomes.forEach(n => {
+        const h = document.createElement('div');
+        h.style.cssText = 'text-align:center;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px';
+        h.textContent = n;
+        grid.appendChild(h);
+      });
+
+      // Células dos dias
+      const hojeStr = new Date().toISOString().split('T')[0];
+      dias.forEach((d, i) => {
+        const key = d.toISOString().split('T')[0];
+        const isPast = key < hojeStr;
+        const ocupados = ocupadosPorDia[key] || [];
+        const livres = TOTAL_HORARIOS - ocupados.length;
+        const isSelecionado = key === _dataSelecionada;
+
+        const cel = document.createElement('div');
+        cel.style.cssText = `
+      text-align:center;padding:10px 4px;border-radius:8px;cursor:${isPast ? 'not-allowed' : 'pointer'};
+      border:2px solid ${isSelecionado ? 'var(--gold)' : 'transparent'};
+      background:${isPast ? 'transparent' : isSelecionado ? 'rgba(212,175,55,0.1)' : 'var(--surface)'};
+      opacity:${isPast ? '0.4' : '1'};
+      transition:all 0.15s;
+    `;
+
+        const corLivres = livres === 0 ? '#e05c5c' : livres <= 2 ? '#e0a85c' : '#5cb85c';
+
+        cel.innerHTML = `
+      <div style="font-size:18px;font-weight:700;color:var(--text)">${d.getDate()}</div>
+      <div style="font-size:10px;margin-top:4px;color:${isPast || livres === 0 ? 'var(--text-muted)' : corLivres};font-weight:600">
+        ${isPast ? '—' : livres === 0 ? 'Lotado' : livres + ' vagas'}
+      </div>
+    `;
+
+        if (!isPast && livres > 0) {
+          cel.onmouseenter = () => { if (key !== _dataSelecionada) cel.style.background = 'var(--hover)'; };
+          cel.onmouseleave = () => { if (key !== _dataSelecionada) cel.style.background = 'var(--surface)'; };
+          cel.onclick = () => selecionarData(key, d, ocupados);
+        }
+
+        grid.appendChild(cel);
+      });
+    }
+
+    async function selecionarData(dataStr, dateObj, ocupados) {
+      _dataSelecionada = dataStr;
+      document.getElementById('ag-data').value = dataStr;
+      document.getElementById('ag-hora').value = '';
+
+      // Re-renderizar para mostrar seleção
+      await renderizarCalendario();
+
+      // Mostrar horários disponíveis
+      const TODOS = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
+      const livres = TODOS.filter(h => !ocupados.includes(h));
+
+      const group = document.getElementById('ag-horarios-group');
+      const horGrid = document.getElementById('ag-horarios-grid');
+      group.style.display = 'block';
+
+      if (livres.length === 0) {
+        horGrid.innerHTML = '<span style="color:#e05c5c;font-size:13px">Nenhum horário disponível neste dia</span>';
+        return;
+      }
+
+      horGrid.innerHTML = livres.map(h => `
+    <button type="button" id="hor-${h.replace(':', '-')}" onclick="selecionarHora('${h}')"
+      style="padding:8px 14px;border:2px solid var(--border);border-radius:8px;background:var(--surface);
+             color:var(--text);cursor:pointer;font-size:13px;font-weight:600;transition:all 0.15s"
+      onmouseover="this.style.borderColor='var(--gold)'"
+      onmouseout="if(document.getElementById('ag-hora').value!=='${h}') this.style.borderColor='var(--border)'">
+      ⏰ ${h}
+    </button>
+  `).join('');
+    }
+
+    function selecionarHora(hora) {
+      document.getElementById('ag-hora').value = hora;
+      // Destacar botão selecionado
+      document.querySelectorAll('#ag-horarios-grid button').forEach(b => {
+        b.style.borderColor = 'var(--border)';
+        b.style.background = 'var(--surface)';
+        b.style.color = 'var(--text)';
+      });
+      const btn = document.getElementById('hor-' + hora.replace(':', '-'));
+      if (btn) {
+        btn.style.borderColor = 'var(--gold)';
+        btn.style.background = 'rgba(212,175,55,0.15)';
+        btn.style.color = 'var(--gold)';
+      }
+    }
+
+    async function mudarSemana(offset) {
+      _semanaOffset += offset;
+      if (_semanaOffset < 0) _semanaOffset = 0;
+      await renderizarCalendario();
     }
 
     async function salvarAgendamento() {
+      const clienteId = document.getElementById('ag-contato').value;
+      const data = document.getElementById('ag-data').value;
+      const hora = document.getElementById('ag-hora').value;
+
+      if (!clienteId) { toast('Selecione um contato', 'error'); return; }
+      if (!data) { toast('Selecione uma data no calendário', 'error'); return; }
+      if (!hora) { toast('Selecione um horário', 'error'); return; }
+
       try {
         await api('/agendamentos', {
           method: 'POST',
           body: JSON.stringify({
-            cliente_id: parseInt(document.getElementById('ag-contato').value),
-            data: document.getElementById('ag-data').value,
-            hora: document.getElementById('ag-hora').value,
+            cliente_id: parseInt(clienteId),
+            data: data,
+            hora: hora,
             tipo: document.getElementById('ag-tipo').value,
-            observacoes: document.getElementById('ag-obs').value,
+            observacoes: document.getElementById('ag-obs').value || '',
           })
         });
         fecharModal('modal-agendamento');
-        toast('Agendamento criado!');
+        toast('✅ Agendamento criado com sucesso!');
         carregarAgendamentos();
-      } catch (e) { toast(e.message, 'error'); }
+        // Limpar cache para atualizar disponibilidade
+        _ocupadosCache = {};
+      } catch (e) { toast(e.message || 'Erro ao criar agendamento', 'error'); }
     }
 
     async function marcarRealizado(id) {
