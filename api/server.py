@@ -359,6 +359,46 @@ def dashboard():
             "total_usuarios": total_usr, "total_instancias": total_inst, "recentes": recentes}
 
 
+
+
+# ─── ENVIAR MENSAGEM WHATSAPP ────────────────────────────
+
+class MensagemWhatsApp(BaseModel):
+    telefone: str
+    mensagem: str
+
+@app.post("/api/enviar-mensagem")
+def enviar_mensagem_whatsapp(data: MensagemWhatsApp):
+    """Envia mensagem WhatsApp para um contato usando a instância cadastrada no CRM."""
+    conn = get_db(); cur = conn.cursor()
+    try:
+        # Buscar instância ativa
+        cur.execute("SELECT * FROM instancias ORDER BY id LIMIT 1")
+        inst = cur.fetchone()
+        if not inst:
+            raise HTTPException(400, "Nenhuma instância WhatsApp cadastrada. Cadastre uma na aba WhatsApp.")
+        inst = dict(inst)
+
+        url = f"{inst['evolution_url']}/message/sendText/{inst['instance_name']}"
+        headers = {"apikey": inst["evolution_key"], "Content-Type": "application/json"}
+        payload = {"number": data.telefone, "text": data.mensagem}
+
+        with httpx.Client(timeout=15) as client:
+            resp = client.post(url, json=payload, headers=headers)
+            if resp.status_code not in (200, 201):
+                raise HTTPException(400, f"Erro ao enviar: {resp.text[:200]}")
+
+        # Salvar no histórico de conversas
+        cur.execute("""
+            INSERT INTO conversas (telefone, origem, tipo, conteudo)
+            VALUES (%s, 'atendente', 'texto', %s)
+        """, (data.telefone, data.mensagem))
+        conn.commit()
+        return {"ok": True}
+    finally:
+        cur.close(); conn.close()
+
+
 # ─── STATIC ──────────────────────────────────────────────
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

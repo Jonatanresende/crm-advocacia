@@ -1255,6 +1255,7 @@
         <td>
           <div style="display:flex;gap:6px">
             <button class="btn btn-outline btn-sm" onclick="verContato(${c.id})">Ver</button>
+            <button class="btn btn-outline btn-sm" onclick="abrirModalMensagem('${c.telefone}','${(c.nome || c.telefone).replace("'", "")}')" title="Enviar WhatsApp" style="color:#25D366">💬</button>
             <button class="btn btn-danger btn-sm" onclick="deletarContato(${c.id})">Excluir</button>
           </div>
         </td>
@@ -1668,6 +1669,39 @@
       } catch (e) { console.error(e); toast('Erro ao abrir agendamento', 'error'); }
     }
 
+
+    // ─── MENSAGEM WHATSAPP ──────────────────────────────────
+    function abrirModalMensagem(telefone, nome) {
+      document.getElementById('msg-destinatario').value = nome;
+      document.getElementById('msg-telefone').value = telefone;
+      document.getElementById('msg-texto').value = '';
+      abrirModal('modal-mensagem');
+    }
+
+    async function enviarMensagemWhatsApp() {
+      const telefone = document.getElementById('msg-telefone').value;
+      const mensagem = document.getElementById('msg-texto').value.trim();
+      if (!mensagem) { toast('Digite uma mensagem', 'error'); return; }
+
+      const btn = document.querySelector('#modal-mensagem .btn-primary');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        await api('/enviar-mensagem', {
+          method: 'POST',
+          body: JSON.stringify({ telefone, mensagem })
+        });
+        toast('Mensagem enviada com sucesso! ✅', 'success');
+        fecharModal('modal-mensagem');
+      } catch (e) {
+        toast('Erro ao enviar: ' + (e.message || 'verifique a instância WhatsApp'), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '💬 Enviar';
+      }
+    }
+
   </script>
 
   <!-- Modal Genérico para detalhes -->
@@ -1678,6 +1712,37 @@
         <button class="btn-close" onclick="fecharModal()">✕</button>
       </div>
       <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+
+  <!-- Modal Enviar Mensagem WhatsApp -->
+  <div class="modal-overlay" id="modal-mensagem" onclick="fecharModal('modal-mensagem')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:480px;width:95%">
+      <div class="modal-header">
+        <h3>💬 Enviar Mensagem WhatsApp</h3>
+        <button class="btn-close" onclick="fecharModal('modal-mensagem')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Para</label>
+          <input type="text" id="msg-destinatario" readonly style="background:var(--surface);color:var(--text-muted)">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="msg-telefone" readonly style="background:var(--surface);color:var(--text-muted)">
+        </div>
+        <div class="form-group">
+          <label>Mensagem</label>
+          <textarea id="msg-texto" rows="5" placeholder="Digite a mensagem..."
+            style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);resize:vertical;font-family:inherit;font-size:14px"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-outline" onclick="fecharModal('modal-mensagem')">Cancelar</button>
+          <button class="btn btn-primary" onclick="enviarMensagemWhatsApp()"
+            style="background:#25D366;border-color:#25D366">💬 Enviar</button>
+        </div>
+      </div>
     </div>
   </div>
 
