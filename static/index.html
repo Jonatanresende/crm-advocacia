@@ -1689,9 +1689,8 @@
       document.getElementById('msg-char-count').textContent = mensagem.length;
       if (!mensagem) { toast('Digite uma mensagem', 'error'); return; }
 
-      const btn = document.querySelector('#modal-mensagem .btn-primary');
-      btn.disabled = true;
-      btn.textContent = 'Enviando...';
+      const btn = document.getElementById('btn-enviar-msg');
+      if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Enviando...'; }
 
       try {
         await api('/enviar-mensagem', {
@@ -1703,8 +1702,7 @@
       } catch (e) {
         toast('Erro ao enviar: ' + (e.message || 'verifique a instância WhatsApp'), 'error');
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '💬 Enviar';
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span>📤</span> Enviar Mensagem'; }
       }
     }
 
