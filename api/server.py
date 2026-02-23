@@ -443,6 +443,36 @@ def dashboard():
 
 
 
+
+# ─── CALENDAR EVENTO (chamado pelo bot) ──────────────────
+
+class CalendarEvento(BaseModel):
+    titulo: str
+    data: str
+    hora: str
+    descricao: str = ""
+    agendamento_id: int = None
+
+@app.post("/api/calendar/evento")
+def criar_evento_calendar(data: CalendarEvento):
+    """Cria evento no Google Calendar — chamado pelo bot ao agendar pelo WhatsApp."""
+    try:
+        from api.google_calendar import criar_evento
+        event_id = criar_evento(data.titulo, data.data, data.hora, data.descricao)
+        # Salvar event_id no agendamento se tiver id
+        if data.agendamento_id:
+            conn = get_db(); cur = conn.cursor()
+            try:
+                cur.execute("UPDATE agendamentos SET google_event_id=%s WHERE id=%s",
+                    (event_id, data.agendamento_id))
+                conn.commit()
+            finally:
+                cur.close(); conn.close()
+        return {"ok": True, "event_id": event_id}
+    except Exception as e:
+        print(f"CALENDAR_EVENTO_ERRO: {e}", flush=True)
+        raise HTTPException(500, str(e))
+
 # ─── ENVIAR MENSAGEM WHATSAPP ────────────────────────────
 
 class MensagemWhatsApp(BaseModel):
