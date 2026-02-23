@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
+from api.google_calendar import criar_evento, atualizar_evento, cancelar_evento, proximos_slots_disponiveis_calendar
 
 app = FastAPI(title="CRM Advocacia")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -58,6 +59,8 @@ def init_db():
             atualizado_em TIMESTAMP DEFAULT NOW()
         )
     """)
+    # Migração: adicionar coluna google_event_id se não existir
+    cur.execute("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS google_event_id TEXT")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS conversas (
             id SERIAL PRIMARY KEY,
@@ -312,21 +315,75 @@ def listar_agendamentos():
 @app.post("/api/agendamentos")
 def criar_agendamento(data: AgendamentoCreate):
     conn = get_db(); cur = conn.cursor()
-    cur.execute("INSERT INTO agendamentos (cliente_id,data_consulta,hora_consulta,tipo_consulta,observacoes) VALUES (%s,%s,%s,%s,%s)",
-        (data.cliente_id, data.data, data.hora, data.tipo, data.observacoes))
-    conn.commit(); cur.close(); conn.close(); return {"ok": True}
+    try:
+        # Buscar nome do cliente para o título do evento
+        cur.execute("SELECT nome, telefone, email FROM clientes WHERE id=%s", (data.cliente_id,))
+        cliente = cur.fetchone()
+        nome = dict(cliente)["nome"] if cliente else "Cliente"
+        email = dict(cliente).get("email") if cliente else None
+        tipo_label = {"primeira_consulta": "1ª Consulta", "retorno": "Retorno", "urgente": "Urgente"}
+        titulo = f"{tipo_label.get(data.tipo, data.tipo)} — {nome}"
+        descricao = data.observacoes or ""
+
+        # Salvar no banco
+        cur.execute("""
+            INSERT INTO agendamentos (cliente_id, data_consulta, hora_consulta, tipo_consulta, observacoes)
+            VALUES (%s,%s,%s,%s,%s) RETURNING id
+        """, (data.cliente_id, data.data, data.hora, data.tipo, data.observacoes))
+        ag_id = cur.fetchone()["id"]
+
+        # Criar evento no Google Calendar
+        try:
+            event_id = criar_evento(titulo, data.data, data.hora, descricao, email)
+            cur.execute("UPDATE agendamentos SET google_event_id=%s WHERE id=%s", (event_id, ag_id))
+        except Exception as e:
+            print(f"GOOGLE_CAL_ERRO: {e}", flush=True)
+
+        conn.commit()
+        return {"ok": True, "id": ag_id}
+    finally:
+        cur.close(); conn.close()
 
 @app.put("/api/agendamentos/{id}/status")
 def atualizar_status(id: int, status: str):
     conn = get_db(); cur = conn.cursor()
-    cur.execute("UPDATE agendamentos SET status=%s, atualizado_em=NOW() WHERE id=%s", (status, id))
-    conn.commit(); cur.close(); conn.close(); return {"ok": True}
+    try:
+        cur.execute("SELECT google_event_id FROM agendamentos WHERE id=%s", (id,))
+        row = cur.fetchone()
+        cur.execute("UPDATE agendamentos SET status=%s, atualizado_em=NOW() WHERE id=%s", (status, id))
+        conn.commit()
+        # Cancelar no Google Calendar se status for cancelado
+        if row and dict(row).get("google_event_id") and status == "cancelado":
+            try: cancelar_evento(dict(row)["google_event_id"])
+            except Exception as e: print(f"GOOGLE_CAL_ERRO: {e}", flush=True)
+        return {"ok": True}
+    finally:
+        cur.close(); conn.close()
 
 @app.delete("/api/agendamentos/{id}")
 def deletar_agendamento(id: int):
     conn = get_db(); cur = conn.cursor()
-    cur.execute("DELETE FROM agendamentos WHERE id=%s", (id,))
-    conn.commit(); cur.close(); conn.close(); return {"ok": True}
+    try:
+        cur.execute("SELECT google_event_id FROM agendamentos WHERE id=%s", (id,))
+        row = cur.fetchone()
+        cur.execute("DELETE FROM agendamentos WHERE id=%s", (id,))
+        conn.commit()
+        if row and dict(row).get("google_event_id"):
+            try: cancelar_evento(dict(row)["google_event_id"])
+            except Exception as e: print(f"GOOGLE_CAL_ERRO: {e}", flush=True)
+        return {"ok": True}
+    finally:
+        cur.close(); conn.close()
+
+@app.get("/api/horarios-disponiveis")
+def horarios_disponiveis():
+    """Retorna próximos horários livres consultando o Google Calendar."""
+    try:
+        slots = proximos_slots_disponiveis_calendar(quantidade=10)
+        return slots
+    except Exception as e:
+        print(f"GOOGLE_CAL_ERRO: {e}", flush=True)
+        raise HTTPException(500, str(e))
 
 
 # ─── HISTÓRICO ───────────────────────────────────────────
