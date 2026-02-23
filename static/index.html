@@ -1427,7 +1427,7 @@
         await api('/agendamentos', {
           method: 'POST',
           body: JSON.stringify({
-            contato_id: parseInt(document.getElementById('ag-contato').value),
+            cliente_id: parseInt(document.getElementById('ag-contato').value),
             data: document.getElementById('ag-data').value,
             hora: document.getElementById('ag-hora').value,
             tipo: document.getElementById('ag-tipo').value,
