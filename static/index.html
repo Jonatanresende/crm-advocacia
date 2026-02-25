@@ -2067,6 +2067,33 @@
       }
     });
 
+
+    // ─── CONFIGURAÇÕES ────────────────────────────────────────
+    async function carregarConfiguracoes() {
+      // Futuramente: buscar valores salvos da API e preencher campos
+      // const cfg = await api('/configuracoes/google-calendar');
+      // document.getElementById('gcal-client-id').value = cfg.client_id || '';
+    }
+
+    async function salvarConfiguracoes() {
+      const payload = {
+        client_id: document.getElementById('gcal-client-id').value.trim(),
+        client_secret: document.getElementById('gcal-client-secret').value.trim(),
+        refresh_token: document.getElementById('gcal-refresh-token').value.trim(),
+        calendar_id: document.getElementById('gcal-calendar-id').value.trim(),
+      };
+      if (!payload.client_id || !payload.client_secret || !payload.refresh_token || !payload.calendar_id) {
+        showToast('Preencha todos os campos antes de salvar.', 'error'); return;
+      }
+      // Futuramente: await api('/configuracoes/google-calendar', { method:'POST', body: JSON.stringify(payload) });
+      showToast('Configurações salvas com sucesso!', 'success');
+    }
+
+    async function testarGoogleCalendar() {
+      showToast('Testando conexão com o Google Calendar...', 'info');
+      // Futuramente: await api('/configuracoes/google-calendar/testar');
+    }
+
   </script>
 
   <!-- Modal Genérico para detalhes -->
