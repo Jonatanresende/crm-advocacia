@@ -1095,6 +1095,38 @@
           <label class="form-label">Nome da Instância</label>
           <input type="text" class="form-input" id="inst-instance" placeholder="Ex: advocacia">
         </div>
+
+        <!-- Separador IA -->
+        <div style="margin:20px 0 16px; border-top:1px solid var(--border); padding-top:16px;">
+          <p
+            style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:14px;">
+            🤖 Configuração de Inteligência Artificial</p>
+
+          <div class="form-group">
+            <label class="form-label">Provedor de IA</label>
+            <select class="form-input" id="inst-ia-provedor" onchange="alternarCamposIA()">
+              <option value="">Selecione o provedor...</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="openai">OpenAI (ChatGPT)</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="deepseek">DeepSeek</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="campo-ia-modelo" style="display:none">
+            <label class="form-label">Modelo</label>
+            <select class="form-input" id="inst-ia-modelo">
+            </select>
+          </div>
+
+          <div class="form-group" id="campo-ia-key" style="display:none">
+            <label class="form-label">Chave de API da IA</label>
+            <input type="password" class="form-input" id="inst-ia-key"
+              placeholder="Cole aqui a chave de API do provedor escolhido">
+            <span style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;">A chave fica
+              armazenada com segurança e não é exibida após salvar.</span>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="fecharModal('modal-instancia')">Cancelar</button>
@@ -1735,10 +1767,55 @@
       } catch (e) { toast('Erro ao carregar instâncias', 'error'); }
     }
 
+    function alternarCamposIA() {
+      const provedor = document.getElementById('inst-ia-provedor').value;
+      const campoModelo = document.getElementById('campo-ia-modelo');
+      const campoKey = document.getElementById('campo-ia-key');
+      const selectModelo = document.getElementById('inst-ia-modelo');
+
+      const modelos = {
+        gemini: [
+          { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (recomendado)' },
+          { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+          { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+          { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+        ],
+        openai: [
+          { value: 'gpt-4o-mini', label: 'GPT-4o Mini (recomendado)' },
+          { value: 'gpt-4o', label: 'GPT-4o' },
+          { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+          { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+        ],
+        anthropic: [
+          { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku (recomendado)' },
+          { value: 'claude-sonnet-4-6', label: 'Claude Sonnet' },
+          { value: 'claude-opus-4-6', label: 'Claude Opus' },
+        ],
+        deepseek: [
+          { value: 'deepseek-chat', label: 'DeepSeek Chat (recomendado)' },
+          { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+        ],
+      };
+
+      if (provedor && modelos[provedor]) {
+        selectModelo.innerHTML = modelos[provedor]
+          .map(m => `<option value="${m.value}">${m.label}</option>`)
+          .join('');
+        campoModelo.style.display = 'block';
+        campoKey.style.display = 'block';
+      } else {
+        campoModelo.style.display = 'none';
+        campoKey.style.display = 'none';
+      }
+    }
+
     function abrirModalInstancia() {
-      ['inst-nome', 'inst-url', 'inst-key', 'inst-instance'].forEach(id => {
+      ['inst-nome', 'inst-url', 'inst-key', 'inst-instance', 'inst-ia-key'].forEach(id => {
         document.getElementById(id).value = '';
       });
+      document.getElementById('inst-ia-provedor').value = '';
+      document.getElementById('campo-ia-modelo').style.display = 'none';
+      document.getElementById('campo-ia-key').style.display = 'none';
       abrirModal('modal-instancia');
     }
 
