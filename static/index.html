@@ -798,6 +798,14 @@
         </svg>
         WhatsApp
       </div>
+      <div class="nav-item" onclick="showPage('configuracoes')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Configurações
+      </div>
     </nav>
     <div class="sidebar-footer">
       <span>v1.0 — Lex CRM</span>
@@ -986,6 +994,76 @@
           <tbody id="tbody-instancias"></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ─── PÁGINA CONFIGURAÇÕES ─────────────────────────── -->
+    <div class="page" id="page-configuracoes">
+
+      <!-- Google Calendar -->
+      <div class="table-container" style="margin-bottom:24px;">
+        <div class="table-header">
+          <h3>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              style="vertical-align:-3px;margin-right:6px">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Google Calendar
+          </h3>
+        </div>
+        <div style="padding:24px 28px;">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">
+            Configure as credenciais OAuth 2.0 do Google para que o bot crie eventos no Google Calendar automaticamente
+            ao agendar consultas.
+            As credenciais são geradas no <strong>Google Cloud Console</strong> → APIs &amp; Services → Credentials.
+          </p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group">
+              <label class="form-label">Client ID</label>
+              <input type="text" class="form-input" id="gcal-client-id"
+                placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Client Secret</label>
+              <input type="password" class="form-input" id="gcal-client-secret" placeholder="GOCSPX-xxxxxxxxxxxx">
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <label class="form-label">Refresh Token</label>
+              <input type="password" class="form-input" id="gcal-refresh-token"
+                placeholder="1//xxxxxxxx — gerado após autorizar o acesso">
+              <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">
+                Gerado ao concluir o fluxo de autorização OAuth. <a href="https://developers.google.com/oauthplayground"
+                  target="_blank" style="color:var(--gold)">OAuth Playground →</a>
+              </span>
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <label class="form-label">Calendar ID</label>
+              <input type="text" class="form-input" id="gcal-calendar-id"
+                placeholder="exemplo@gmail.com  ou  xxxxxxxx@group.calendar.google.com">
+              <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">
+                ID do calendário onde os agendamentos serão criados. Use <code
+                  style="background:var(--surface2);padding:1px 4px;border-radius:3px">primary</code> para o calendário
+                principal da conta.
+              </span>
+            </div>
+          </div>
+
+          <div
+            style="margin-top:8px;padding:12px 16px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--gold);">
+            <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0;">
+              🔒 As credenciais são armazenadas com segurança e nunca são exibidas após salvar. Para revogar o acesso,
+              gere novas credenciais no Google Cloud Console.
+            </p>
+          </div>
+
+          <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
+            <button class="btn btn-outline" onclick="testarGoogleCalendar()">Testar Conexão</button>
+            <button class="btn btn-gold" onclick="salvarConfiguracoes()">Salvar Configurações</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 
@@ -1215,7 +1293,7 @@
     // ─── NAVEGAÇÃO ───────────────────────────────────────────
     const titles = {
       dashboard: 'Dashboard', contatos: 'Contatos', agendamentos: 'Agendamentos',
-      usuarios: 'Usuários', instancias: 'WhatsApp', 'contato-detalhe': 'Detalhes do Contato'
+      usuarios: 'Usuários', instancias: 'WhatsApp', configuracoes: 'Configurações', 'contato-detalhe': 'Detalhes do Contato'
     };
 
     function showPage(page) {
@@ -1237,6 +1315,7 @@
         agendamentos: carregarAgendamentos,
         usuarios: carregarUsuarios,
         instancias: carregarInstancias,
+        configuracoes: carregarConfiguracoes,
       };
       if (loaders[page]) loaders[page]();
     }
